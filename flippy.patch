@@ -1,0 +1,91 @@
+diff --git a/cleanup.sh b/cleanup.sh
+new file mode 100644
+index 0000000..a5b8ef8
+--- /dev/null
++++ b/cleanup.sh
+@@ -0,0 +1,68 @@
++#!/bin/sh
++# cleanup.sh
++# 打包后置清理：删除冗余驱动、无线固件与拨号组件
++
++ROOT="$1"
++if [ -z "$ROOT" ] || [ ! -d "$ROOT" ]; then
++    echo "错误：未传入有效rootfs目录"
++    exit 1
++fi
++
++cd "$ROOT" || {
++    echo "错误：进入目录 $ROOT 失败"
++    exit 1
++}
++
++echo "=================== 后置清理冗余驱动与模块 ==================="
++
++run_rmdir() {
++    local cmd="$1"
++    local msg="$2"
++    eval "$cmd" 2>/dev/null
++    echo "$msg ... 完成"
++}
++
++run_delfiles() {
++    local cmd="$1"
++    local msg_ok="$2"
++    local msg_fail="$3"
++    output=$(eval "$cmd" 2>/dev/null | wc -l)
++    if [ "$output" -gt 0 ]; then
++        echo "$msg_ok ... 完成（删除 ${output} 个文件）"
++    else
++        echo "$msg_fail ... 未找到匹配文件"
++    fi
++}
++
++# 目录删除
++run_rmdir 'rm -rf lib/modules/*/kernel/drivers/net/usb' "删除USB网卡驱动目录"
++run_rmdir 'rm -rf lib/modules/*/kernel/drivers/net/wireless' "删除无线驱动目录"
++run_rmdir 'rm -rf lib/modules/*/kernel/drivers/net/ppp' "删除PPP驱动目录"
++run_rmdir 'rm -rf lib/modules/*/kernel/drivers/net/vmxnet3' "删除vmxnet3网卡驱动"
++
++# 无线内核模块
++run_delfiles 'find lib/modules -name "*mac80211*.ko*" -delete -print; find lib/modules -name "*cfg80211*.ko*" -delete -print; find lib/modules -name "*rfkill*.ko*" -delete -print' "清理无线内核模块" "清理无线内核模块"
++
++# 多余有线网卡驱动
++run_delfiles 'for kw in atlantic bcmgenet dwmac e1000e fsl mvneta stmmac hyperv ena vmxnet3 octeontx2; do find lib/modules -name "*${kw}*.ko*" -delete -print; done' "清理多余有线网卡驱动" "清理多余有线网卡驱动"
++
++# 非Realtek PHY驱动
++run_delfiles 'find lib/modules -name "*phy*.ko*" ! -name "realtek*" -delete -print; for phy in air_en8811h ax88796b microchip smsc; do find lib/modules -name "${phy}.ko*" -delete -print; done' "清理非Realtek PHY驱动" "清理非Realtek PHY驱动"
++
++# 杂项外设驱动
++run_delfiles 'find lib/modules -name "*sp805_wdt*.ko*" -delete -print; find lib/modules -name "*gpio-pca953x*.ko*" -delete -print; find lib/modules -name "*i2c-mux-pca954x*.ko*" -delete -print; find lib/modules -name "*ssb*.ko*" -delete -print; find lib/modules -name "*bcma*.ko*" -delete -print' "清理杂项外设驱动" "清理杂项外设驱动"
++
++# WiFi固件
++run_rmdir 'rm -rf lib/firmware/brcm; rm -rf lib/firmware/rtl_*' "移除WiFi固件文件"
++
++# 无线程序与配置文件
++run_rmdir 'rm -f usr/sbin/hostapd usr/sbin/wpa_supplicant usr/sbin/wpa_cli usr/sbin/hostapd_cli; rm -f etc/init.d/hostapd etc/init.d/wpad etc/init.d/wpa_supplicant; rm -rf etc/config/wireless; rm -rf etc/wireless' "移除无线程序与配置文件"
++
++# MAC地址修改脚本
++run_rmdir 'rm -f usr/bin/fix_wifi_macaddr.sh usr/bin/find_macaddr.pl usr/bin/inc_macaddr.pl usr/bin/get_random_mac.sh' "移除MAC地址修改脚本"
++
++# PPP拨号组件
++run_rmdir 'rm -f usr/sbin/pppd usr/sbin/pppoe-discovery usr/bin/chat; rm -f etc/init.d/ppp' "移除PPP拨号组件"
++
++echo ""
++echo "后置清理 ... 完成"
+diff --git a/openwrt_flippy.sh b/openwrt_flippy.sh
+index 89537fa..3591429 100755
+--- a/openwrt_flippy.sh
++++ b/openwrt_flippy.sh
+@@ -712,6 +712,12 @@ echo -e "${INFO} Disk usage before packaging:\n$(df -hT /opt/${SELECT_PACKITPATH
+ # Package OpenWrt firmware
+ [[ "${KERNEL_AUTO_LATEST,,}" =~ ^(true|yes)$ ]] && query_kernel
+ download_kernel
++
++if [ "${APPLY_CUSTOM_PATCH}" = "1" ]; then
++    cp ${GITHUB_ACTION_PATH}/cleanup.sh /tmp/cleanup.sh && chmod +x /tmp/cleanup.sh
++    (cd /opt/${SELECT_PACKITPATH} && sed -i '/write_uboot_to_disk/i\        sh /tmp/cleanup.sh "$TGT_ROOT"' mk_s905d_n1.sh) && echo -e "${SUCCESS} Cleanup script injected."
++fi
++
+ make_openwrt
+ out_github_env
+ 
