@@ -234,8 +234,14 @@ jobs:
           echo "🔍 Rootfs: $ROOTFS_FILE"
           echo "file=$ROOTFS_FILE" >> $GITHUB_OUTPUT
 
+      - name: Setup flippy-openwrt-actions
+        run: |
+          git clone --depth 1 https://github.com/ophub/flippy-openwrt-actions custom
+          cd custom
+          git apply $GITHUB_WORKSPACE/flippy.patch
+
       - name: Package armsr-armv8 as ImmortalWrt for N1
-        uses: KuniJiwa/flippy-openwrt-actions@custom
+        uses: ./custom
         env:
           OPENWRT_ARMVIRT: ${{ steps.find_rootfs.outputs.file }}
           PACKAGE_SOC: s905d
