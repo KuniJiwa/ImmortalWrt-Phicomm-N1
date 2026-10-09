@@ -34,9 +34,8 @@ GITHUB_TOKEN = os.environ.get("GITHUB_TOKEN", "")
 # run/压缩包解压白名单：只对指定的 run 包做过滤，其他 run 不受影响
 # key   = build.sh 里声明的 run 包名前缀（pure_pkg，即去掉后缀的部分）
 # value = 只保留这些包名的 ipk，其余丢弃；key 不在字典里则全提取
-RUN_EXTRACT_FILTER = {
-    "argon": {"luci-i18n-argon-config-zh-cn"},
-}
+# 当前为空：所有 run/压缩包解压后全量提取
+RUN_EXTRACT_FILTER = {}
 
 EXTRACTED_PKGS_LIST = []
 
@@ -283,7 +282,7 @@ def main():
             continue
 
         # ① 包名匹配
-        pat = re.compile(rf"(^|/){re.escape(pure_pkg)}([_-][0-9]|$)")
+        pat = re.compile(rf"(^|/){re.escape(pure_pkg)}([_-][0-9]|[_-]git-[0-9]|$)")
         candidate_urls = [u for u in candidate_urls if pat.search(u)]
         if not candidate_urls:
             log(f"  ⚠️ 在 {repo} ({tag}) 中未找到包名匹配 '{pure_pkg}' 的候选文件，跳过")

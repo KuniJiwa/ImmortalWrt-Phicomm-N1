@@ -47,10 +47,8 @@ add_plugin_group() {
 # 晶晨宝盒（写入EMMC/内核管理 必备）
 add_plugin_group "ophub/luci-app-amlogic" "luci-app-amlogic luci-i18n-amlogic-zh-cn"
 
-# Argon 主题 + 配置
-add_plugin_group "jerrykuku/luci-theme-argon#argon" "luci-theme-argon luci-app-argon-config"
-# Argon 汉化包
-add_plugin_group "wkccd/CloudRunFilesBuilder#argon" "argon.run"
+# Argon 主题 + 配置 + 汉化（v2.4.8 起官方自带汉化）
+add_plugin_group "jerrykuku/luci-theme-argon#argon" "luci-theme-argon luci-app-argon-config luci-i18n-argon-config-zh-cn"
 
 # iStore 应用商店
 case "$PLUGINS" in
