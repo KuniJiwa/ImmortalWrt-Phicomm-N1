@@ -282,7 +282,7 @@ def main():
             continue
 
         # ① 包名匹配
-        pat = re.compile(rf"(^|/){re.escape(pure_pkg)}([_-][0-9]|[_-]git-[0-9]|$)")
+        pat = re.compile(rf"(^|/){re.escape(pure_pkg)}([_-]v?[0-9]|[_-]git-[0-9]|$)")
         candidate_urls = [u for u in candidate_urls if pat.search(u)]
         if not candidate_urls:
             log(f"  ⚠️ 在 {repo} ({tag}) 中未找到包名匹配 '{pure_pkg}' 的候选文件，跳过")
